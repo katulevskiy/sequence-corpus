@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify all shared cases against Python, Rust, and C++ implementations."""
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -10,13 +11,22 @@ sys.path.insert(0, str(ROOT / 'python'))
 from sequence_tools import evaluate
 
 
+def integer(raw):
+    if not re.fullmatch(r'[+-]?[0-9]+', raw):
+        raise ValueError('invalid integer token')
+    value = int(raw)
+    if not -(1 << 63) <= value < (1 << 63):
+        raise ValueError('integer outside signed 64-bit range')
+    return value
+
+
 def validate_python(text):
     count = 0
     for line in text.splitlines():
         operation, argument, raw_values, raw_expected = line.split('\t')
-        values = [int(v) for v in raw_values.split(',')] if raw_values else []
-        expected = [int(v) for v in raw_expected.split(',')] if raw_expected else []
-        actual = evaluate(operation, values, int(argument))
+        values = [integer(v) for v in raw_values.split(',')] if raw_values else []
+        expected = [integer(v) for v in raw_expected.split(',')] if raw_expected else []
+        actual = evaluate(operation, values, integer(argument))
         if actual != expected:
             raise ValueError(f'Corpus row {count + 1}: {actual} != {expected}')
         count += 1

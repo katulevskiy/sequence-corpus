@@ -1,17 +1,24 @@
 #include "sequence.hpp"
 #include <iostream>
-#include <sstream>
+
+notebook::Integer integer(const std::string& word) {
+    const auto start = !word.empty() && (word.front() == '+' || word.front() == '-') ? 1u : 0u;
+    if (start == word.size() ||
+        !std::all_of(word.begin() + start, word.end(), [](char c) { return c >= '0' && c <= '9'; })) {
+        throw std::invalid_argument("invalid integer token");
+    }
+    return std::stoll(word);
+}
 
 notebook::Sequence numbers(const std::string& text) {
     notebook::Sequence result;
     if (text.empty()) return result;
-    std::istringstream stream(text);
-    std::string word;
-    while (std::getline(stream, word, ',')) {
-        std::size_t used = 0;
-        const auto value = std::stoll(word, &used);
-        if (used != word.size()) throw std::invalid_argument("invalid integer");
-        result.push_back(value);
+    std::size_t begin = 0;
+    while (true) {
+        const auto end = text.find(',', begin);
+        result.push_back(integer(text.substr(begin, end - begin)));
+        if (end == std::string::npos) break;
+        begin = end + 1;
     }
     return result;
 }
@@ -30,7 +37,7 @@ int main() {
                 begin = end + 1;
             }
             if (fields.size() != 4) throw std::invalid_argument("expected four fields");
-            const auto actual = notebook::evaluate(fields[0], numbers(fields[2]), std::stoll(fields[1]));
+            const auto actual = notebook::evaluate(fields[0], numbers(fields[2]), integer(fields[1]));
             if (actual != numbers(fields[3])) {
                 std::cerr << "Corpus row " << count + 1 << " failed\n";
                 return 1;

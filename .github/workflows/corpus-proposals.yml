@@ -1,0 +1,37 @@
+name: Corpus proposals
+on:
+  schedule:
+    - cron: '47 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      proposal:
+        description: 'Allow the initial proposal on a rest day'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: corpus-proposals-main
+  cancel-in-progress: false
+jobs:
+  propose:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+      - run: python3 -m unittest discover -s tools/tests -v
+      - name: Propose tested examples
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          FORCE_PROPOSAL: ${{ inputs.proposal || false }}
+        run: |
+          if [ "$FORCE_PROPOSAL" = "true" ]; then
+            python3 tools/propose.py --force
+          else
+            python3 tools/propose.py
+          fi
