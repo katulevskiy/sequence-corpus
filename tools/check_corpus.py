@@ -33,8 +33,18 @@ def validate_python(text):
     return count
 
 
+def load_corpus(directory):
+    """Keep each shard's last record separate from the next shard's first."""
+    parts = []
+    for path in sorted(directory.rglob('*.tsv')):
+        text = path.read_text()
+        if text:
+            parts.append(text if text.endswith('\n') else text + '\n')
+    return ''.join(parts)
+
+
 def main():
-    text = ''.join(path.read_text() for path in sorted((ROOT / 'corpus').rglob('*.tsv')))
+    text = load_corpus(ROOT / 'corpus')
     print(f'Python: {validate_python(text)} corpus cases passed', flush=True)
     subprocess.run(['cargo', 'run', '--quiet', '--manifest-path', str(ROOT / 'rust/Cargo.toml'),
                     '--bin', 'corpus'], input=text, text=True, check=True)
