@@ -3,9 +3,10 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from check_corpus import load_corpus, validate_python
+from check_corpus import load_corpus, main, validate_python
 
 
 class CorpusFileTests(unittest.TestCase):
@@ -29,6 +30,25 @@ class CorpusFileTests(unittest.TestCase):
         self.put('b.tsv', 'prefix\t0\t\t')
         self.put('c.tsv', 'sum\t0\t\t0\n')
         self.assertEqual(validate_python(load_corpus(self.root)), 2)
+
+    def test_missing_directory_and_absent_tsv_files_are_rejected(self):
+        self.put('notes.txt', 'This is not a corpus shard.')
+        for directory in (self.root / 'missing', self.root):
+            with self.subTest(directory=directory):
+                with self.assertRaisesRegex(ValueError, 'No corpus examples'):
+                    load_corpus(directory)
+
+    def test_all_empty_shards_are_rejected(self):
+        self.put('a.tsv', '')
+        self.put('nested/b.tsv', '')
+        with self.assertRaisesRegex(ValueError, 'No corpus examples'):
+            load_corpus(self.root)
+
+    def test_main_stops_before_launching_runners_without_examples(self):
+        with patch('check_corpus.ROOT', self.root), patch('check_corpus.subprocess.run') as run:
+            with self.assertRaisesRegex(ValueError, 'No corpus examples'):
+                main()
+            run.assert_not_called()
 
     def test_malformed_and_blank_records_are_not_silently_repaired(self):
         self.put('b.tsv', 'sum\t0\t2\t2\n')
