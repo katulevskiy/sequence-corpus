@@ -13,7 +13,7 @@ The TSV format is operation, integer argument, comma-separated input, and comma-
 
 This project uses automation to propose additional generated regression examples, with reviews and maintenance recorded in issues and pull requests.
 
-Each TSV file is a separate corpus shard; its last record may omit the final newline. Empty shards are ignored. Malformed or blank records are rejected.
+Each TSV file is a separate corpus shard; its last record may omit the final newline. Empty shards are ignored when other shards contain examples. A missing corpus directory or a corpus consisting only of empty files fails validation. Malformed or blank records are rejected.
 
 The Corpus proposals workflow checks every six hours. It can open 1–4 proposals on an active day, with weekend variation and quiet periods. Its queue is capped at six open proposals. Every new shard is checked by all three implementations before opening a PR. Reviews identify their automated origin and describe the validation performed; merging is a separate action after review.
 

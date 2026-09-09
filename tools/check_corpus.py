@@ -40,6 +40,8 @@ def load_corpus(directory):
         text = path.read_text()
         if text:
             parts.append(text if text.endswith('\n') else text + '\n')
+    if not parts:
+        raise ValueError(f'No corpus examples found in {directory}')
     return ''.join(parts)
 
 
